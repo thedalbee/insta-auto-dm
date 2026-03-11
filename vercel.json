@@ -1,11 +1,5 @@
 {
   "buildCommand": "prisma generate && npm run build",
   "devCommand": "npm run dev",
-  "framework": "nextjs",
-  "env": {
-    "SKIP_ENV_VALIDATION": {
-      "description": "Skip environment variable validation during build",
-      "value": "false"
-    }
-  }
+  "framework": "nextjs"
 }
