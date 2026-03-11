@@ -1,0 +1,49 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 트리거: 키워드 + 응답 DM 페어
+model Trigger {
+  id        String   @id @default(cuid())
+  keyword   String   @unique
+  responseMsg String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  logs      Log[]
+}
+
+// 로그: DM 발송 이력
+model Log {
+  id        String   @id @default(cuid())
+  triggerId String
+  userId    String   // Instagram user ID
+  userName  String   @default("")
+  message   String   // 발송한 DM 메시지
+  status    String   @default("pending") // pending, sent, failed
+  error     String?
+  timestamp DateTime @default(now())
+
+  trigger   Trigger  @relation(fields: [triggerId], references: [id], onDelete: Cascade)
+
+  @@index([triggerId])
+  @@index([timestamp])
+}
+
+// 설정: API 토큰 등 저장
+model Settings {
+  id String @id @default("singleton")
+  instagramBotToken String?
+  webhookSecret String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
