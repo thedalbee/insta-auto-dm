@@ -1,294 +1,148 @@
-# insta-auto-dm MVP 빌드 완료 보고서
+# insta-auto-dm 빌드 완료 보고서
 
-**완료 날짜**: 2026-03-11  
-**빌드 상태**: ✅ 성공  
-**상태**: 로컬 개발 가능, 완전한 API 및 UI 구현
+## 배포 정보
+- **Vercel URL**: https://insta-auto-dm.vercel.app
+- **Production URL**: https://insta-auto-78h0q8pp5-sungminate-vercels-projects.vercel.app
+- **GitHub**: https://github.com/thedalbee/insta-auto-dm
+- **배포 완료**: 2026-03-11 15:28 UTC
 
----
+## 빌드 상태
+✅ **성공** - 모든 작업 완료
 
-## 작업 요약
+## 완료된 작업 목록
 
-### 1. 프로젝트 구조 수립 ✓
-- Next.js 14 + TypeScript + Tailwind CSS 설정
-- Prisma ORM + PostgreSQL 스키마 정의
-- 디버그 로깅 시스템 (RULES.md 준수)
+### 1. QA - 로컬 실행 확인 ✅
+- `npm install` 완료
+- `npm run build` 성공
+- 빌드 에러 없음
+- 경고: /api/logs에서 `request.url` 동적 렌더링 경고 (정상 동작)
 
-### 2. UI 컴포넌트 통합 ✓
-- BrandScan에서 shadcn/ui 컴포넌트 복사 및 적응
-- 커스텀 Slot 구현 (radix-ui 대체)
-- Header, Footer 컴포넌트 (insta-auto-dm 맞춤)
-- Button, Card, Input, Textarea, Badge, Progress, Separator
+### 2. README.md 보강 ✅
+아래 항목 추가:
 
-### 3. API 엔드포인트 구현 ✓
+#### Meta Instagram Graph API 설정 (자세한 가이드)
+- Facebook Developer Console에서 앱 생성 방법
+- Instagram Basic Display / Instagram Graph API 추가 절차
+- Webhook 설정 (ngrok 또는 배포 URL)
+- 필수 권한 설정: `instagram_manage_messages`, `instagram_manage_comments`, `pages_manage_metadata`
+- 테스트 계정 추가 방법
+- Live Mode 전환 절차
 
-#### 트리거 관리
-- `GET /api/triggers` - 모든 트리거 조회
-- `POST /api/triggers` - 새 트리거 생성
-- `PUT /api/triggers/[id]` - 트리거 수정
-- `DELETE /api/triggers/[id]` - 트리거 삭제
+#### Neon PostgreSQL 설정
+- Neon Console 접속 및 프로젝트 생성
+- Connection String 복사 및 설정
+- 데이터베이스 마이그레이션 방법
 
-#### 웹훅 수신
-- `GET /api/webhooks/instagram` - Meta 검증
-- `POST /api/webhooks/instagram` - Instagram 댓글 이벤트 처리
-- 키워드 매칭 로직
-- DM 자동 발송 (dryRun 모드 포함)
-- 발송 이력 자동 로깅
+#### 환경변수 설명 (.env.example 기준)
+- `META_APP_ID`, `META_APP_SECRET`, `META_PAGE_ACCESS_TOKEN`, `META_VERIFY_TOKEN` 설명
+- `DATABASE_URL` 설정
+- `NEXT_PUBLIC_APP_URL` 설명
+- 각 환경변수를 얻는 방법 상세 안내
 
-#### 활동 로그
-- `GET /api/logs?page=1&limit=10&status=sent` - 페이지네이션 지원
+#### 로컬 개발 시작 방법
+- 저장소 클론
+- 의존성 설치
+- 환경변수 설정
+- 데이터베이스 마이그레이션
+- 개발 서버 실행
+- Webhook 로컬 테스트 (ngrok)
 
-### 4. 대시보드 UI ✓
-- 트리거 목록 조회
-- 트리거 생성/수정/삭제 폼
-- 실시간 피드백 (성공/에러 메시지)
-- 반응형 디자인 (모바일 지원)
+#### Docker 셀프호스팅
+- Dockerfile 작성 및 빌드
+- Docker 컨테이너 실행 방법
+- Docker Compose 설정 (PostgreSQL 포함)
+- Self-Hosted VPS 배포 (Nginx 리버스 프록시 포함)
 
-### 5. 랜딩 페이지 ✓
-- 기능 소개 (6가지 주요 기능)
-- 가격 정책 (자체호스팅 무료, 관리형 $5-10/월)
-- 빠른 시작 가이드
-- CTA 버튼들
+### 3. Vercel 배포 ✅
+- 초기 배포: Prisma 빌드 에러
+- 해결: `prisma generate` 추가
+- 최종 배포: ✅ 성공
+- Vercel 프로젝트명: `insta-auto-dm`
+- 기본 URL: https://insta-auto-dm.vercel.app
 
-### 6. 문서화 ✓
-- README.md (완전한 셀프호스팅 가이드)
-- 설치 방법, 환경 변수 설정
-- Meta 앱 설정 가이드
-- 웹훅 설정 방법
-- API 레퍼런스
-- 배포 가이드 (Vercel, Docker, VPS)
-- 트러블슈팅 섹션
-- 아키텍처 다이어그램
-
-### 7. 데이터베이스 스키마 ✓
-
-```sql
--- Trigger: 키워드 + 응답 매핑
-CREATE TABLE triggers (
-  id STRING PRIMARY KEY,
-  keyword STRING UNIQUE,
-  responseMsg STRING,
-  enabled BOOLEAN DEFAULT true,
-  createdAt TIMESTAMP,
-  updatedAt TIMESTAMP
-)
-
--- Log: DM 발송 이력
-CREATE TABLE logs (
-  id STRING PRIMARY KEY,
-  triggerId STRING,
-  userId STRING,
-  userName STRING,
-  message STRING,
-  status STRING (pending|sent|failed),
-  error STRING,
-  timestamp TIMESTAMP
-)
-
--- Settings: 설정 저장
-CREATE TABLE settings (
-  id STRING PRIMARY KEY,
-  instagramBotToken STRING,
-  webhookSecret STRING,
-  createdAt TIMESTAMP,
-  updatedAt TIMESTAMP
-)
+### 4. vercel.json 추가 ✅
+```json
+{
+  "buildCommand": "prisma generate && npm run build",
+  "devCommand": "npm run dev",
+  "framework": "nextjs"
+}
 ```
 
----
+### 5. GitHub push ✅
+커밋 기록:
+1. `docs: README 보강 (Meta 설정, Neon DB, 환경변수, 로컬 개발, Docker 셀프호스팅) + vercel.json 추가`
+2. `fix: Prisma generate 추가 (Vercel 빌드 에러 수정)`
+3. `fix: vercel.json env 설정 제거`
 
-## 완료 기준 확인
+모든 커밋이 main 브랜치에 push됨.
 
-| 항목 | 상태 | 비고 |
-|------|------|------|
-| npm run dev 실행 가능 | ✅ | `npm run build` 성공 |
-| 트리거 CRUD 동작 | ✅ | 4개 엔드포인트 구현 |
-| Webhook 수신 | ✅ | Meta 서명 검증 포함 |
-| DM 발송 로직 | ✅ | Mock/실제 모드 선택 가능 |
-| 로그 저장 | ✅ | DB + API 조회 지원 |
-| 랜딩 페이지 | ✅ | 완전한 마케팅 콘텐츠 |
-| README.md | ✅ | 완전한 문서화 |
+## 다음 단계 (달비님이 수행)
 
----
+### 1. 환경변수 설정
+Vercel 프로젝트 Settings > Environment Variables에서:
+```
+META_APP_ID=your_meta_app_id
+META_APP_SECRET=your_meta_app_secret
+META_PAGE_ACCESS_TOKEN=your_page_access_token
+META_VERIFY_TOKEN=your_verify_token
+DATABASE_URL=your_neon_postgresql_url
+NEXT_PUBLIC_APP_URL=https://insta-auto-dm.vercel.app
+```
 
-## 기술 구조
+### 2. Meta Webhook 설정
+- Meta Developer Console에서 Webhook URL을 `https://insta-auto-dm.vercel.app/api/webhooks/instagram`으로 설정
+- Verify Token을 Vercel 환경변수의 `META_VERIFY_TOKEN`과 동일하게 설정
 
-### 폴더 구조
+### 3. 데이터베이스 마이그레이션
+로컬에서:
+```bash
+DATABASE_URL=your_neon_url npx prisma migrate deploy
+```
+
+### 4. 테스트
+- https://insta-auto-dm.vercel.app 접속
+- `/dashboard` 접속하여 트리거 생성 테스트
+- Instagram 댓글 테스트
+
+## 주의사항
+- ⚠️ 아직 DATABASE_URL이 설정되지 않음 (달비님이 나중에 Neon 연결 시 추가)
+- DATABASE_URL 없이도 배포는 성공했으나, 데이터베이스 기능은 작동하지 않음
+- 따라서 향후 환경변수 추가 시 자동으로 재배포됨 (Vercel의 기본 동작)
+
+## 기술 스택
+- **Frontend**: Next.js 14.2.35 + React + Tailwind CSS
+- **Backend**: Next.js API Routes + Prisma ORM
+- **Database**: PostgreSQL (Neon)
+- **Auth**: Meta Instagram Graph API
+- **Deployment**: Vercel (Edge Functions)
+- **Version Control**: GitHub
+
+## 파일 구조
 ```
 insta-auto-dm/
-├── app/
-│   ├── api/
-│   │   ├── triggers/          # CRUD API
-│   │   ├── webhooks/instagram/ # 웹훅 수신
-│   │   └── logs/              # 로그 조회
-│   ├── dashboard/             # 대시보드
-│   ├── landing/               # 랜딩 페이지
-│   ├── layout.tsx             # 루트 레이아웃
-│   ├── page.tsx               # 홈 페이지
-│   └── globals.css            # 글로벌 스타일
+├── app/                          # Next.js App Router
+│   ├── api/                       # API 엔드포인트
+│   │   ├── triggers/              # 트리거 CRUD
+│   │   ├── webhooks/instagram/    # Meta webhook receiver
+│   │   └── logs/                  # 활동 로그 조회
+│   ├── dashboard/                 # 대시보드 UI
+│   ├── landing/                   # 랜딩 페이지
+│   └── layout.tsx
 ├── src/
 │   ├── components/
-│   │   ├── ui/                # shadcn/ui 컴포넌트
-│   │   └── layout/            # Header, Footer
-│   └── lib/
-│       ├── db.ts              # Prisma 클라이언트
-│       ├── logger.ts           # 디버그 로깅 (RULES.md)
-│       ├── instagram-api.ts    # Meta API 유틸
-│       ├── slot.tsx            # Slot 컴포넌트
-│       └── utils.ts            # cn() 헬퍼
+│   ├── lib/
+│   └── types/
 ├── prisma/
-│   └── schema.prisma          # DB 스키마
-├── public/                    # 정적 파일
-├── .env.example               # 환경 변수 템플릿
-├── .env.local                 # 개발용 설정
-├── package.json               # 의존성
-├── tsconfig.json              # TypeScript 설정
-├── next.config.js             # Next.js 설정
-├── tailwind.config.js         # Tailwind 설정
-├── postcss.config.js          # PostCSS 설정
-├── README.md                  # 문서
-├── RULES.md                   # 프로젝트 규칙
-└── BUILD_PLAN.md              # 빌드 계획
+│   └── schema.prisma              # 데이터베이스 스키마
+├── public/
+├── README.md                      # 상세 문서
+├── vercel.json                    # Vercel 설정
+├── package.json
+├── tsconfig.json
+├── tailwind.config.js
+└── .env.example
 
-### 의존성
-- **Runtime**: React 18, Next.js 14, Prisma, class-variance-authority, clsx, tailwind-merge
-- **Dev**: TypeScript, Tailwind CSS, PostCSS, ESLint
-
-### 디버그 로깅 (RULES.md 준수)
-모든 외부 호출(API, DB)에서:
-- 입력: 첫 200자 + 길이
-- 출력: 첫 300자 + 성공/실패
-- 에러: 전체 메시지 + 입력 정보
-- 포맷: `[함수명] level=? msg=? input=? output=? error=?`
-
-### dryRun 모드
-개발 환경에서 `NODE_ENV=development`일 때:
-- DM 발송: 실제 API 호출 없음, Mock messageId 반환
-- 입력 검증, 로직 테스트에 유용
-
----
-
-## 로컬에서 실행하기
-
-```bash
-# 1. 의존성 설치 (이미 완료)
-npm install
-
-# 2. .env.local 설정 (이미 생성됨)
-# DATABASE_URL, META_* 환경변수 설정
-
-# 3. Prisma 마이그레이션 (Neon 연결 후)
-npx prisma migrate dev
-
-# 4. 개발 서버 시작
-npm run dev
-
-# 5. 브라우저에서 접속
-# http://localhost:3000
-```
-
----
-
-## 다음 단계 (MVP 이후)
-
-1. **Neon 데이터베이스 연결**
-   - `DATABASE_URL` 설정
-   - `npx prisma migrate dev` 실행
-
-2. **Meta 앱 설정**
-   - App ID, App Secret, Access Token 획득
-   - Webhook URL 등록 (`/api/webhooks/instagram`)
-
-3. **테스트**
-   - 로컬에서 트리거 CRUD 테스트
-   - 웹훅 시뮬레이션 (curl 또는 Meta 테스트 도구)
-
-4. **배포**
-   - Vercel에 푸시: `vercel deploy`
-   - Docker 빌드: `docker build -t insta-auto-dm .`
-
-5. **GitHub 공개 (달비님 허가 후)**
-   - `.env.example` 문서화
-   - LICENSE (MIT) 추가
-   - GitHub Issues 템플릿
-   - Contributing 가이드
-
----
-
-## 주요 결정사항
-
-### 1. BrandScan 컴포넌트 재사용
-- shadcn/ui 기반 UI 컴포넌트 (Button, Card, Input 등)
-- Header, Footer 레이아웃
-- **이점**: 빠른 UI 구축, 일관된 디자인
-
-### 2. 커스텀 Slot 구현
-- radix-ui 버전 불일치 해결
-- 간단한 React 컴포넌트로 구현
-- **이점**: 의존성 최소화, 빠른 빌드
-
-### 3. dryRun 모드
-- 개발 환경에서 실제 API 호출 안 함
-- **이점**: 로컬 테스트, 비용 절감
-
-### 4. Prisma 싱글톤
-- Next.js 핫 리로드에서 PrismaClient 중복 생성 방지
-- **이점**: 안정적인 DB 연결
-
----
-
-## 문제 해결 기록 (RULES.md 준수)
-
-| 날짜 | 증상 | 원인 | 방지책 |
-|------|------|------|--------|
-| 2026-03-11 | radix-ui 설치 실패 | BrandScan 컴포넌트의 radix-ui 버전 불일치 | 커스텀 Slot 구현 작성 |
-| 2026-03-11 | TypeScript 에러 | 사용하지 않는 파라미터 | `_` 프리픽스 사용 |
-| 2026-03-11 | Progress/Separator 컴포넌트 오류 | radix-ui 호출 | 커스텀 구현 작성 |
-
----
-
-## 체크리스트
-
-- [x] 프로젝트 폴더 생성
-- [x] Next.js 초기 설정 완료
-- [x] BrandScan 컴포넌트 복사 및 적응
-- [x] Prisma 스키마 정의
-- [x] 트리거 CRUD API 구현
-- [x] 웹훅 수신 API 구현
-- [x] DM 발송 로직 구현
-- [x] 활동 로그 API 구현
-- [x] 대시보드 UI 구현
-- [x] 랜딩 페이지 구현
-- [x] README.md 문서화
-- [x] npm run build 성공
-- [x] 환경 변수 템플릿 생성
-
----
-
-## 최종 상태
-
-✅ **MVP 완성**
-
-- 완전한 백엔드 API (트리거, 웹훅, 로그)
-- 완전한 프론트엔드 (대시보드, 랜딩)
-- 프로덕션 레디 (타입스크립트, 에러 처리, 로깅)
-- 완전한 문서화 (README, API 레퍼런스, 배포 가이드)
-
-### 로컬에서 즉시 테스트 가능
-```bash
-cd /root/.openclaw/workspace/projects/insta-auto-dm
-npm install
-npm run dev
-# http://localhost:3000
-```
-
-### 다음 단계
-1. Neon 데이터베이스 연결
-2. Meta 앱 설정 및 테스트
-3. Vercel/Docker 배포
-4. GitHub 공개 (달비님 허가 후)
-
----
-
-**작업 완료**: 모든 MVP 기능 구현 및 빌드 성공  
-**예상 배포 시간**: 1-2시간 (Neon + Meta 설정)  
-**문제 해결 필요**: 없음
+## 완료 메시지
+모든 마무리 작업이 완료되었습니다. 
+프로젝트는 Vercel에 배포되었고, 따비님은 Meta API 토큰과 Neon 데이터베이스 URL을 환경변수에 추가하면 즉시 사용 가능합니다.
