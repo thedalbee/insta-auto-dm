@@ -84,32 +84,102 @@ Visit `http://localhost:3000` 🎉
 
 ## Configuration
 
-### Step 1: Create a Meta App
+## Meta Instagram Graph API 설정 (자세한 가이드)
 
-1. Go to [Meta for Developers](https://developers.facebook.com/)
-2. Create a new app (type: Business)
-3. Add **Instagram Basic Display** product
-4. Add **Webhooks** product
-5. Get your App ID and App Secret
+### Step 1: Facebook Developer Console에서 앱 생성
 
-### Step 2: Get an Instagram Access Token
+1. [Meta for Developers](https://developers.facebook.com/)에 접속
+2. "My Apps" → "Create App" 클릭
+3. 앱 유형: **Business** 선택
+4. 앱 이름 입력 (예: "Instagram Auto DM Bot")
+5. 앱 생성 완료 후 **앱 ID**와 **앱 비밀번호** 복사 (`.env.local`의 `META_APP_ID`, `META_APP_SECRET`에 저장)
 
-1. Go to your app dashboard
-2. Under **Messenger** > **Settings**, generate a page access token
-3. Copy it to `META_PAGE_ACCESS_TOKEN`
+### Step 2: Instagram Basic Display / Instagram Graph API 추가
 
-### Step 3: Configure the Webhook
+1. 앱 대시보드에서 "제품 추가" (Add Products) 클릭
+2. **Instagram Basic Display** 검색 후 "추가"
+3. **Instagram Graph API** 검색 후 "추가"
 
-1. Go to **Webhooks** settings
-2. **Subscribe** to the webhook with:
-   - URL: `https://yourdomain.com/api/webhooks/instagram`
-   - Verify Token: The value you set in `META_VERIFY_TOKEN`
-3. **Subscribe** to these fields: `comments`
+### Step 3: Webhook 설정
 
-### Step 4: Set Your App to Live Mode
+1. 앱 대시보드 좌측 메뉴에서 **Webhooks** 클릭
+2. **Pages** 선택
+3. "페이지 구독" (Subscribe to this object) 클릭
+4. **Webhook URL**: `https://yourdomain.com/api/webhooks/instagram`
+   - 로컬 개발: `ngrok`을 사용해 공개 URL 생성 (`ngrok http 3000` → HTTPS URL 사용)
+   - 배포: Vercel URL 사용 (예: `https://insta-auto-dm-123.vercel.app/api/webhooks/instagram`)
+5. **Verify Token**: `.env.local`의 `META_VERIFY_TOKEN`에 설정한 값 입력
+6. **구독할 필드**: `comments` 체크
+7. "확인" (Verify and Save) 클릭
 
-1. Go to **Settings** > **Basic**
-2. Click **Switch to Live Mode**
+### Step 4: 필수 권한 설정
+
+1. 앱 대시보드 → **Settings** → **Basic**
+2. "App Roles" 섹션에서:
+   - `instagram_manage_messages` - DM 전송 권한
+   - `instagram_manage_comments` - 댓글 읽기 권한
+   - `pages_manage_metadata` - 페이지 정보 조회 권한
+   추가 확인
+
+### Step 5: 테스트 계정 추가
+
+1. 앱 대시보드 → **Roles** → **Test Users**
+2. "테스트 사용자 추가" (Add Test User) 클릭
+3. Instagram 계정을 테스트 계정으로 추가
+4. 권한 설정: `instagram_graph_user_media`, `instagram_basic_display`, `pages_read_user_profile` 선택
+
+### Step 6: 앱을 Live Mode로 전환
+
+1. 앱 대시보드 → **Settings** > **Basic**
+2. 상단의 "Development" → "Live" 전환
+3. 공개 설명 (Public Description) 입력 (필수)
+4. 앱 아이콘 업로드 (권장)
+5. 확인 후 Live Mode 활성화
+
+## Neon PostgreSQL 설정 방법
+
+1. [Neon Console](https://console.neon.tech/)에 접속 (GitHub/Google 로그인)
+2. "Create Project" 클릭
+3. 프로젝트 이름 입력 (예: "insta-auto-dm")
+4. PostgreSQL 버전 선택 (최신 권장)
+5. 프로젝트 생성 완료
+6. **Connection String** 복사
+   - 우측 "Connect" 버튼 클릭
+   - "Direct" 탭에서 PostgreSQL 연결 문자열 복사 (예: `postgresql://user:password@ep-xxxxx.neon.tech/neon?sslmode=require`)
+7. `.env.local` (또는 Vercel 환경변수)에 `DATABASE_URL`로 설정
+8. 로컬에서 마이그레이션 실행: `npx prisma migrate dev`
+
+## 환경변수 설명 (.env.example 기준)
+
+```env
+# 필수: Meta Instagram Graph API
+META_APP_ID="123456789"                          # Meta Developer Console에서 앱 생성 후 얻은 ID
+META_APP_SECRET="abc123def456..."               # Meta Developer Console에서 앱 생성 후 얻은 비밀번호
+META_PAGE_ACCESS_TOKEN="EAAxxxxx..."            # Meta 페이지 접근 토큰 (Instagram 계정 연결)
+META_VERIFY_TOKEN="any_random_string_here"      # Webhook 검증용 토큰 (임의 문자열 가능)
+
+# 필수: 데이터베이스
+DATABASE_URL="postgresql://user:password@host:5432/insta_auto_dm"  # Neon 또는 로컬 PostgreSQL
+
+# 필수: 애플리케이션
+NEXT_PUBLIC_APP_URL="http://localhost:3000"     # 앱의 공개 URL (로컬에선 localhost, 배포 시 Vercel URL)
+NODE_ENV="development"                           # 개발: "development", 배포: "production"
+```
+
+### 환경변수 얻는 방법
+
+1. **Meta API 토큰**
+   - [Meta for Developers](https://developers.facebook.com/) → 앱 선택
+   - 앱 ID, 앱 비밀번호: **Settings** > **Basic**
+   - 페이지 액세스 토큰: **Messenger** > **Settings** > "Generate Page Access Token"
+
+2. **Neon DATABASE_URL**
+   - [Neon Console](https://console.neon.tech/) → 프로젝트 선택
+   - **Connect** 버튼 → PostgreSQL 연결 문자열 복사
+
+3. **Verify Token**
+   - 임의의 안전한 문자열 생성 (예: `sha256`의 무작위 문자열)
+   - Meta Webhook 설정 시 같은 값 사용
 
 ## Usage
 
@@ -224,55 +294,181 @@ Response:
 }
 ```
 
+## 로컬 개발 시작 방법
+
+### 전제 조건
+- Node.js 18 이상 설치: [nodejs.org](https://nodejs.org/)
+- PostgreSQL 또는 Neon 데이터베이스 URL 준비
+- Meta Instagram Graph API 토큰 준비
+
+### 로컬 실행 단계
+
+1. **저장소 클론**
+   ```bash
+   git clone https://github.com/thedalbee/insta-auto-dm.git
+   cd insta-auto-dm
+   ```
+
+2. **의존성 설치**
+   ```bash
+   npm install
+   ```
+
+3. **환경변수 설정**
+   ```bash
+   cp .env.example .env.local
+   # 텍스트 에디터로 .env.local 열고 Meta API 토큰, DATABASE_URL 입력
+   ```
+
+4. **데이터베이스 마이그레이션**
+   ```bash
+   npx prisma migrate dev
+   # 또는 데이터베이스 초기화:
+   npx prisma db push
+   ```
+
+5. **개발 서버 실행**
+   ```bash
+   npm run dev
+   ```
+   - 브라우저에서 `http://localhost:3000` 접속
+   - 대시보드: `http://localhost:3000/dashboard`
+
+### Webhook 로컬 테스트 (ngrok)
+
+Meta가 로컬 `localhost:3000`으로 요청을 보낼 수 없으므로 공개 URL이 필요합니다:
+
+1. **ngrok 설치**: [ngrok.com](https://ngrok.com/) 또는 `brew install ngrok`
+2. **ngrok 실행**
+   ```bash
+   ngrok http 3000
+   ```
+3. **HTTPS URL 복사** (예: `https://abcd-123-45-67.ngrok.io`)
+4. **Meta Webhook 설정**에 `https://abcd-123-45-67.ngrok.io/api/webhooks/instagram` 입력
+5. **로컬 서버** (`npm run dev`)와 **ngrok**이 동시에 실행 중이어야 함
+
 ## Deployment
 
-### Vercel (Recommended)
+### Vercel (권장)
 
-1. Push your code to GitHub
-2. Import the repository in [Vercel](https://vercel.com)
-3. Set environment variables in project settings
-4. Deploy!
+1. 코드를 GitHub으로 push
+2. [Vercel](https://vercel.com)에서 GitHub 계정으로 로그인
+3. "Import Project" → GitHub 저장소 선택
+4. **Environment Variables** 추가:
+   - `DATABASE_URL` (Neon 연결 문자열)
+   - `META_APP_ID`, `META_APP_SECRET`, `META_PAGE_ACCESS_TOKEN`, `META_VERIFY_TOKEN`
+   - `NEXT_PUBLIC_APP_URL` (배포된 Vercel URL)
+5. "Deploy" 클릭
+6. 배포 완료 후 Vercel 대시보드에서 URL 확인
 
 ```bash
+# CLI로 배포 (선택사항)
+npm install -g vercel
 vercel deploy --prod
 ```
 
-### Docker
+### Docker 셀프호스팅
 
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-CMD ["npm", "start"]
-```
+1. **Dockerfile 생성** (프로젝트 루트):
+   ```dockerfile
+   FROM node:18-alpine
+   WORKDIR /app
+   COPY package*.json ./
+   RUN npm ci
+   COPY . .
+   RUN npm run build
+   EXPOSE 3000
+   CMD ["npm", "start"]
+   ```
+
+2. **Docker 이미지 빌드**
+   ```bash
+   docker build -t insta-auto-dm .
+   ```
+
+3. **Docker 컨테이너 실행**
+   ```bash
+   docker run -d \
+     -e DATABASE_URL="postgresql://user:password@db:5432/insta_auto_dm" \
+     -e META_APP_ID="your_app_id" \
+     -e META_APP_SECRET="your_app_secret" \
+     -e META_PAGE_ACCESS_TOKEN="your_token" \
+     -e META_VERIFY_TOKEN="your_verify_token" \
+     -e NEXT_PUBLIC_APP_URL="https://yourdomain.com" \
+     -p 3000:3000 \
+     --name insta-auto-dm \
+     insta-auto-dm
+   ```
+
+4. **Docker Compose** (선택사항, PostgreSQL 포함):
+   ```yaml
+   version: '3.8'
+   services:
+     app:
+       build: .
+       ports:
+         - "3000:3000"
+       environment:
+         DATABASE_URL: "postgresql://user:password@db:5432/insta_auto_dm"
+         META_APP_ID: "your_app_id"
+         META_APP_SECRET: "your_app_secret"
+         META_PAGE_ACCESS_TOKEN: "your_token"
+         META_VERIFY_TOKEN: "your_verify_token"
+         NEXT_PUBLIC_APP_URL: "https://yourdomain.com"
+       depends_on:
+         - db
+
+     db:
+       image: postgres:15-alpine
+       environment:
+         POSTGRES_DB: insta_auto_dm
+         POSTGRES_USER: user
+         POSTGRES_PASSWORD: password
+       volumes:
+         - postgres_data:/var/lib/postgresql/data
+
+   volumes:
+     postgres_data:
+   ```
+
+   실행: `docker-compose up -d`
+
+### Self-Hosted (VPS, 예: AWS EC2, DigitalOcean)
 
 ```bash
-docker build -t insta-auto-dm .
-docker run -e DATABASE_URL=... -p 3000:3000 insta-auto-dm
-```
-
-### Self-Hosted (VPS)
-
-```bash
-# On your VPS
-git clone https://github.com/yourusername/insta-auto-dm.git
+# VPS에 접속 후:
+git clone https://github.com/thedalbee/insta-auto-dm.git
 cd insta-auto-dm
 npm install
 npm run build
 
-# Create .env.local with your variables
+# .env.local 생성 및 환경변수 설정
+nano .env.local
+# (Meta API 토큰, DATABASE_URL 입력)
 
-# Run with PM2
+# 데이터베이스 마이그레이션
+npx prisma migrate deploy
+
+# PM2로 백그라운드 실행
 npm install -g pm2
 pm2 start npm --name insta-auto-dm -- start
 pm2 save
 pm2 startup
 
-# Set up reverse proxy (nginx)
-# Point your domain to the app
+# Nginx 리버스 프록시 설정 (선택사항)
+# /etc/nginx/sites-available/insta-auto-dm:
+# server {
+#     listen 80;
+#     server_name yourdomain.com;
+#     location / {
+#         proxy_pass http://localhost:3000;
+#         proxy_http_version 1.1;
+#         proxy_set_header Upgrade $http_upgrade;
+#         proxy_set_header Connection 'upgrade';
+#     }
+# }
+# sudo ln -s /etc/nginx/sites-available/insta-auto-dm /etc/nginx/sites-enabled/
+# sudo nginx -t && sudo systemctl restart nginx
 ```
 
 ## Troubleshooting
